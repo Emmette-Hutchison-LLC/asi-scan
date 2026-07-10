@@ -23,3 +23,17 @@ def test_round_trip_flags_canary():
     d = RoundTripDetector(canary="CANARY-EXEC", observed_key="later")
     v = d.evaluate(_result({"later": "...CANARY-EXEC..."}))
     assert v.status is VerdictStatus.VULNERABLE
+
+
+def test_substring_leak_inconclusive_when_key_absent():
+    # Key absent means the probe never exercised the target (e.g. tool not present),
+    # which must read INCONCLUSIVE, not SAFE.
+    d = SubstringLeakDetector(needle="SECRET", observed_key="response")
+    v = d.evaluate(_result({}))
+    assert v.status is VerdictStatus.INCONCLUSIVE
+
+
+def test_round_trip_inconclusive_when_key_absent():
+    d = RoundTripDetector(canary="CANARY-EXEC", observed_key="later")
+    v = d.evaluate(_result({}))
+    assert v.status is VerdictStatus.INCONCLUSIVE

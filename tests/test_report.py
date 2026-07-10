@@ -27,6 +27,25 @@ def test_markdown_groups_by_asi():
     assert "asi02.unauth_invoke" in md
 
 
+def test_markdown_distinguishes_inconclusive_from_safe():
+    def _f(status: VerdictStatus) -> Finding:
+        return Finding(
+            probe_id=f"p.{status.value.lower()}",
+            asi_categories=["ASI02"],
+            severity=Severity.HIGH,
+            verdict=Verdict(status, {}),
+            remediation="x",
+            target_ref="mock://t",
+        )
+
+    md = to_markdown(ScanReport("mock://t", [_f(VerdictStatus.INCONCLUSIVE), _f(VerdictStatus.SAFE)], "0"))
+    # INCONCLUSIVE and SAFE must not share the same marker (🟢 was previously used for both).
+    inconclusive_line = next(ln for ln in md.splitlines() if "p.inconclusive" in ln)
+    safe_line = next(ln for ln in md.splitlines() if "p.safe" in ln)
+    assert "🟢" in safe_line
+    assert "🟢" not in inconclusive_line
+
+
 def test_sarif_has_one_result_per_vuln():
     sarif = json.loads(to_sarif(_report()))
     results = sarif["runs"][0]["results"]

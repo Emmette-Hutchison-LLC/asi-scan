@@ -10,11 +10,18 @@ def to_json(report: ScanReport) -> str:
     return json.dumps(report.to_dict(), indent=2)
 
 
+_MARK = {
+    VerdictStatus.VULNERABLE: "🔴",
+    VerdictStatus.SAFE: "🟢",
+    VerdictStatus.INCONCLUSIVE: "⚪",
+}
+
+
 def to_markdown(report: ScanReport) -> str:
     by_asi: dict[str, list[str]] = defaultdict(list)
     for f in report.findings:
         for asi in f.asi_categories:
-            mark = "🔴" if f.verdict.status is VerdictStatus.VULNERABLE else "🟢"
+            mark = _MARK[f.verdict.status]
             by_asi[asi].append(
                 f"- {mark} `{f.probe_id}` ({f.verdict.status.value}) — {f.remediation}"
             )

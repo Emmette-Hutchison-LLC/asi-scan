@@ -17,3 +17,13 @@ async def test_asi02_flags_vulnerable_server():
 async def test_asi02_safe_on_hardened_server():
     finding = await UnauthInvokeProbe().execute(InMemoryTarget(build_vulnerable_server(hardened=True)))
     assert finding.verdict.status is VerdictStatus.SAFE
+
+
+@pytest.mark.asyncio
+async def test_asi02_inconclusive_when_tool_absent():
+    # A target that does not expose the privileged tool: the probe cannot exercise it,
+    # so the honest verdict is INCONCLUSIVE, not SAFE.
+    from mcp.server.fastmcp import FastMCP
+
+    finding = await UnauthInvokeProbe().execute(InMemoryTarget(FastMCP("empty")))
+    assert finding.verdict.status is VerdictStatus.INCONCLUSIVE

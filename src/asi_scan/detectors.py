@@ -9,17 +9,25 @@ class Detector(Protocol):
     def evaluate(self, result: ProbeResult) -> Verdict: ...
 
 
+_ABSENT_REASON = "observed value absent — probe could not exercise the target"
+
+
 class SubstringLeakDetector:
     def __init__(self, needle: str, observed_key: str) -> None:
         self.needle = needle
         self.observed_key = observed_key
 
     def evaluate(self, result: ProbeResult) -> Verdict:
-        haystack = str(result.observed.get(self.observed_key, ""))
-        leaked = self.needle in haystack
+        evidence = {"needle": self.needle, "observed_key": self.observed_key}
+        if self.observed_key not in result.observed:
+            return Verdict(
+                status=VerdictStatus.INCONCLUSIVE,
+                evidence={**evidence, "reason": _ABSENT_REASON},
+            )
+        leaked = self.needle in str(result.observed[self.observed_key])
         return Verdict(
             status=VerdictStatus.VULNERABLE if leaked else VerdictStatus.SAFE,
-            evidence={"needle": self.needle, "observed_key": self.observed_key},
+            evidence=evidence,
         )
 
 
@@ -29,8 +37,14 @@ class RoundTripDetector:
         self.observed_key = observed_key
 
     def evaluate(self, result: ProbeResult) -> Verdict:
-        seen = self.canary in str(result.observed.get(self.observed_key, ""))
+        evidence = {"canary": self.canary, "observed_key": self.observed_key}
+        if self.observed_key not in result.observed:
+            return Verdict(
+                status=VerdictStatus.INCONCLUSIVE,
+                evidence={**evidence, "reason": _ABSENT_REASON},
+            )
+        seen = self.canary in str(result.observed[self.observed_key])
         return Verdict(
             status=VerdictStatus.VULNERABLE if seen else VerdictStatus.SAFE,
-            evidence={"canary": self.canary, "observed_key": self.observed_key},
+            evidence=evidence,
         )
