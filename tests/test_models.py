@@ -1,5 +1,5 @@
 from asi_scan.models import (
-    Finding, ProbeResult, ScanReport, Severity, Verdict, VerdictStatus,  # noqa: F401
+    Finding, ScanReport, Severity, Verdict, VerdictStatus,
 )
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from enum import Enum
 
 import typer
 
@@ -12,6 +13,13 @@ from asi_scan.selftest import build_vulnerable_server
 from asi_scan.target import InMemoryTarget
 
 app = typer.Typer(help="Runtime security scanner for agentic AI systems (OWASP ASI01-ASI10).")
+
+
+class OutputFormat(str, Enum):
+    json = "json"
+    sarif = "sarif"
+    md = "md"
+
 
 _RENDER = {"json": to_json, "sarif": to_sarif, "md": to_markdown}
 
@@ -25,7 +33,7 @@ def _main() -> None:
 def scan_cmd(
     target: str = typer.Option("self-test", "--target", help="'self-test' or an MCP endpoint URL."),
     asi: str | None = typer.Option(None, "--asi", help="Filter to one ASI id, e.g. ASI02."),
-    fmt: str = typer.Option("json", "--format", help="json | sarif | md"),
+    fmt: OutputFormat = typer.Option(OutputFormat.json, "--format", help="json | sarif | md"),
     authorize: bool = typer.Option(False, "--authorize", help="Attest you are authorized to test this target."),
 ) -> None:
     """Scan an MCP target and print an ASI-mapped report."""
@@ -40,6 +48,6 @@ def scan_cmd(
         raise typer.Exit(code=2)
 
     report = asyncio.run(scan(t, asi=asi))
-    typer.echo(_RENDER[fmt](report))
+    typer.echo(_RENDER[fmt.value](report))
     vulnerable = any(f.verdict.status is VerdictStatus.VULNERABLE for f in report.findings)
     raise typer.Exit(code=1 if vulnerable else 0)

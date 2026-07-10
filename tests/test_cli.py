@@ -15,3 +15,8 @@ def test_remote_target_requires_authorization():
     result = runner.invoke(app, ["scan", "--target", "https://example.com/mcp"])
     assert result.exit_code != 0
     assert "authorize" in result.stdout.lower()
+
+
+def test_invalid_format_exits_with_usage_error_not_vulnerability_exit_code():
+    result = runner.invoke(app, ["scan", "--target", "self-test", "--format", "xml"])
+    assert result.exit_code == 2
