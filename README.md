@@ -2,6 +2,8 @@
 
 **Runtime security scanner for agentic AI systems, mapped to the [OWASP Top 10 for Agentic Applications](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/) (ASI01–ASI10).**
 
+![asi-scan scanning the bundled self-test MCP server](docs/demo.gif)
+
 `asi-scan` connects to a live **MCP** (Model Context Protocol) agent system and runs
 **active, multi-step behavioral probes** — then asserts on what actually happened at
 runtime: did an unauthenticated tool call really return a privileged result? did poisoned
