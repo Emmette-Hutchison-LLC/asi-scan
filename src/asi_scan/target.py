@@ -6,6 +6,10 @@ from mcp.server.fastmcp import FastMCP
 from mcp.shared.memory import create_connected_server_and_client_session as client_session
 
 
+class ToolCallError(RuntimeError):
+    """Raised when an MCP tool call returns an error result (``isError`` true)."""
+
+
 class ToolInfo(TypedDict):
     name: str
     description: str
@@ -39,4 +43,10 @@ class InMemoryTarget:
         async with client_session(self._server._mcp_server) as client:
             await client.initialize()
             result = await client.call_tool(name, args)
-            return "".join(c.text for c in result.content if c.type == "text")
+            text = "".join(c.text for c in result.content if c.type == "text")
+            is_error = bool(result.isError)
+        # Raise outside the session context: raising inside anyio's task group would
+        # wrap the exception in an ExceptionGroup.
+        if is_error:
+            raise ToolCallError(f"MCP tool {name!r} returned an error: {text}")
+        return text
