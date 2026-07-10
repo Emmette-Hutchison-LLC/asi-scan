@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Superpowers SDD scratch (task briefs, reports, review packages, ledger)
+.superpowers/
