@@ -8,24 +8,57 @@ from asi_scan.target import InMemoryTarget
 from asi_scan.selftest import build_vulnerable_server
 
 
-@register
-class _EngineProbe(Probe):
-    id = "engine.asi02"
-    asi_categories = ["ASI02"]
-    severity = Severity.HIGH
-    remediation = "auth"
+@pytest.fixture
+def engine_probe():
+    @register
+    class _EngineProbe(Probe):
+        id = "engine.asi02"
+        asi_categories = ["ASI02"]
+        severity = Severity.HIGH
+        remediation = "auth"
 
-    async def run(self, target):
-        out = await target.call_tool("read_secret", {})
-        return ProbeResult(self.id, self.asi_categories, observed={"response": out})
+        async def run(self, target):
+            out = await target.call_tool("read_secret", {})
+            return ProbeResult(self.id, self.asi_categories, observed={"response": out})
 
-    def detector(self):
-        return SubstringLeakDetector("SECRET", "response")
+        def detector(self):
+            return SubstringLeakDetector("SECRET", "response")
+
+    return _EngineProbe
+
+
+@pytest.fixture
+def failing_probe():
+    @register
+    class _FailingProbe(Probe):
+        id = "engine.failing"
+        asi_categories = ["ASI02"]
+        severity = Severity.HIGH
+        remediation = "n/a"
+
+        async def run(self, target):
+            raise RuntimeError("probe blew up")
+
+        def detector(self):
+            return SubstringLeakDetector("SECRET", "response")
+
+    return _FailingProbe
 
 
 @pytest.mark.asyncio
-async def test_scan_collects_findings_for_asi():
+async def test_scan_collects_findings_for_asi(engine_probe):
     report = await scan(InMemoryTarget(build_vulnerable_server()), asi="ASI02")
     ids = {f.probe_id for f in report.findings}
     assert "engine.asi02" in ids
     assert any(f.verdict.status is VerdictStatus.VULNERABLE for f in report.findings)
+
+
+@pytest.mark.asyncio
+async def test_scan_isolates_failing_probe(engine_probe, failing_probe):
+    # A probe that raises must not abort the scan: it becomes an INCONCLUSIVE
+    # finding with the error recorded, and healthy probes still run.
+    report = await scan(InMemoryTarget(build_vulnerable_server()), asi="ASI02")
+    by_id = {f.probe_id: f for f in report.findings}
+    assert by_id["engine.failing"].verdict.status is VerdictStatus.INCONCLUSIVE
+    assert "error" in by_id["engine.failing"].verdict.evidence
+    assert by_id["engine.asi02"].verdict.status is VerdictStatus.VULNERABLE
