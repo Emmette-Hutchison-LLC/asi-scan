@@ -28,6 +28,16 @@ replace them.
 Early development. See [`docs/design/`](docs/design/) for the v0.1 design and
 [`docs/plans/`](docs/plans/) for the implementation plan.
 
+## Install & run
+
+```bash
+uv sync --all-extras --dev
+uv run asi-scan scan --target self-test --format md
+```
+
+`--target self-test` runs the bundled vulnerable mock server. Scanning any real
+MCP endpoint requires `--authorize` and is only supported from v0.2 onward.
+
 ## Intended use & safety
 
 `asi-scan` is an offensive dual-use security tool. Use it only against systems you are
