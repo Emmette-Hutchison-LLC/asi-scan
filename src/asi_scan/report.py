@@ -3,7 +3,15 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 
-from asi_scan.models import ScanReport, VerdictStatus
+from asi_scan.models import ScanReport, Severity, VerdictStatus
+
+_SARIF_LEVEL = {
+    Severity.CRITICAL: "error",
+    Severity.HIGH: "error",
+    Severity.MEDIUM: "warning",
+    Severity.LOW: "note",
+    Severity.INFO: "note",
+}
 
 
 def to_json(report: ScanReport) -> str:
@@ -37,7 +45,7 @@ def to_sarif(report: ScanReport) -> str:
     results = [
         {
             "ruleId": f.probe_id,
-            "level": "error",
+            "level": _SARIF_LEVEL[f.severity],
             "message": {"text": f"{f.probe_id}: {f.verdict.status.value}"},
             "properties": {"asi_categories": f.asi_categories, "evidence": f.verdict.evidence},
         }

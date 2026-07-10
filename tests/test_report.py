@@ -52,3 +52,20 @@ def test_sarif_has_one_result_per_vuln():
     assert len(results) == 1
     assert results[0]["ruleId"] == "asi02.unauth_invoke"
     assert results[0]["properties"]["asi_categories"] == ["ASI02"]
+
+
+def test_sarif_maps_severity_to_level():
+    def _vuln(sev: Severity) -> Finding:
+        return Finding(
+            probe_id=f"p.{sev.value.lower()}",
+            asi_categories=["ASI02"],
+            severity=sev,
+            verdict=Verdict(VerdictStatus.VULNERABLE, {}),
+            remediation="x",
+            target_ref="mock://t",
+        )
+
+    report = ScanReport("mock://t", [_vuln(Severity.MEDIUM), _vuln(Severity.CRITICAL)], "0")
+    by_rule = {r["ruleId"]: r["level"] for r in json.loads(to_sarif(report))["runs"][0]["results"]}
+    assert by_rule["p.medium"] == "warning"
+    assert by_rule["p.critical"] == "error"
